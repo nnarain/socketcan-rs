@@ -6,7 +6,7 @@ license = "MIT"
 edition = "2018"
 name = "socketcan-hal"
 repository = "https://github.com/nnarain/socketcan-rs"
-version = "3.0.0-alpha.1"
+version = "3.0.0-alpha.2"
 
 # Features:
 #
