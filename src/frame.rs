@@ -1,12 +1,11 @@
-use crate::err::{ConstructionError, CanError, CanErrorDecodingFailure};
-use embedded_hal::can::{Frame, Id, StandardId, ExtendedId};
 use crate::constants::*;
+use crate::err::{CanError, CanErrorDecodingFailure, ConstructionError};
 use crate::util::hal_id_to_raw;
+use embedded_hal::can::{ExtendedId, Frame, Id, StandardId};
 
 use std::fmt;
 
 use itertools::Itertools;
-
 
 /// CanFrame
 ///
@@ -51,7 +50,6 @@ impl CanFrame {
             _id |= EFF_FLAG;
         }
 
-
         if rtr {
             _id |= RTR_FLAG;
         }
@@ -68,13 +66,13 @@ impl CanFrame {
         }
 
         Ok(CanFrame {
-               _id,
-               _data_len: data.len() as u8,
-               _pad: 0,
-               _res0: 0,
-               _res1: 0,
-               _data: full_data,
-           })
+            _id,
+            _data_len: data.len() as u8,
+            _pad: 0,
+            _res0: 0,
+            _res1: 0,
+            _data: full_data,
+        })
     }
 
     /// Return the error message
@@ -99,7 +97,6 @@ impl CanFrame {
     pub fn error(&self) -> Result<CanError, CanErrorDecodingFailure> {
         CanError::from_frame(self)
     }
-
 }
 
 impl Frame for CanFrame {
@@ -119,13 +116,9 @@ impl Frame for CanFrame {
     /// Return the actual CAN ID (without EFF/RTR/ERR flags)
     fn id(&self) -> Id {
         if self.is_extended() {
-            Id::Extended(
-                ExtendedId::new(self._id & EFF_MASK).unwrap()
-            )
+            Id::Extended(ExtendedId::new(self._id & EFF_MASK).unwrap())
         } else {
-            Id::Standard(
-                StandardId::new((self._id & SFF_MASK) as u16).unwrap()
-            )
+            Id::Standard(StandardId::new((self._id & SFF_MASK) as u16).unwrap())
         }
     }
 
@@ -138,7 +131,7 @@ impl Frame for CanFrame {
     fn is_remote_frame(&self) -> bool {
         self._id & RTR_FLAG != 0
     }
-    
+
     /// Data length
     fn dlc(&self) -> usize {
         self._data_len as usize
@@ -160,4 +153,3 @@ impl fmt::UpperHex for CanFrame {
         write!(f, "{}", parts.join(sep))
     }
 }
-

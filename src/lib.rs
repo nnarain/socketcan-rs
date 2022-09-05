@@ -70,7 +70,7 @@ pub use frame::CanFrame;
 pub mod constants;
 
 mod socket;
-pub use socket::{CanSocket, CanFilter, ShouldRetry};
+pub use socket::{CanFilter, CanSocket, ShouldRetry};
 
 pub mod dump;
 
@@ -84,7 +84,6 @@ pub use nl::CanInterface;
 
 use std::io::ErrorKind;
 
-
 impl embedded_hal::can::blocking::Can for CanSocket {
     type Frame = CanFrame;
     type Error = CanError;
@@ -97,11 +96,11 @@ impl embedded_hal::can::blocking::Can for CanSocket {
                 } else {
                     Err(frame.error().unwrap_or(CanError::Unknown(0)))
                 }
-            },
+            }
             Err(e) => {
                 let code = e.raw_os_error().unwrap_or(0);
                 Err(CanError::Unknown(code as u32))
-            },
+            }
         }
     }
 
@@ -111,7 +110,7 @@ impl embedded_hal::can::blocking::Can for CanSocket {
             Err(e) => {
                 let code = e.raw_os_error().unwrap_or(0);
                 Err(CanError::Unknown(code as u32))
-            },
+            }
         }
     }
 }
@@ -129,7 +128,7 @@ impl embedded_hal::can::nb::Can for CanSocket {
                     let can_error = frame.error().unwrap_or(CanError::Unknown(0));
                     Err(nb::Error::Other(can_error))
                 }
-            },
+            }
             Err(e) => {
                 let e = match e.kind() {
                     ErrorKind::WouldBlock => nb::Error::WouldBlock,
@@ -144,7 +143,7 @@ impl embedded_hal::can::nb::Can for CanSocket {
     }
 
     fn transmit(&mut self, frame: &Self::Frame) -> nb::Result<Option<Self::Frame>, Self::Error> {
-        match self.write_frame(&frame) {
+        match self.write_frame(frame) {
             Ok(_) => Ok(None),
             Err(e) => {
                 match e.kind() {
