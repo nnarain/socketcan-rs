@@ -65,7 +65,7 @@ mod err;
 pub use err::{CanError, CanErrorDecodingFailure, CanSocketOpenError, ConstructionError};
 
 mod frame;
-pub use frame::CanFrame;
+pub use frame::{CanFrame, IntoCanId};
 
 pub mod constants;
 

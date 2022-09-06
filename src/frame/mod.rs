@@ -1,11 +1,12 @@
+mod id;
+
 use crate::constants::*;
 use crate::err::{CanError, CanErrorDecodingFailure, ConstructionError};
 use crate::util::hal_id_to_raw;
 use embedded_hal::can::{ExtendedId, Frame, Id, StandardId};
-
-use std::fmt;
-
+pub use id::IntoCanId;
 use itertools::Itertools;
+use std::fmt;
 
 /// CanFrame
 ///
@@ -34,21 +35,23 @@ pub struct CanFrame {
 }
 
 impl CanFrame {
-    pub fn init(id: u32, data: &[u8], rtr: bool, err: bool) -> Result<CanFrame, ConstructionError> {
-        let mut _id = id;
-
+    pub fn init(
+        id: impl IntoCanId,
+        data: &[u8],
+        rtr: bool,
+        err: bool,
+    ) -> Result<CanFrame, ConstructionError> {
         if data.len() > 8 {
             return Err(ConstructionError::TooMuchData);
         }
 
-        if id > EFF_MASK {
-            return Err(ConstructionError::IDTooLarge);
-        }
-
-        // set EFF_FLAG on large message
-        if id > SFF_MASK {
-            _id |= EFF_FLAG;
-        }
+        let mut _id = match id.to_can_id()? {
+            Id::Standard(id) => id.as_raw() as u32,
+            Id::Extended(id) => {
+                // set EFF_FLAG
+                id.as_raw() | EFF_FLAG
+            }
+        };
 
         if rtr {
             _id |= RTR_FLAG;
