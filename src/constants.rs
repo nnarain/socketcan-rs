@@ -4,9 +4,7 @@
 // @author Natesh Narain <nnaraindev@gmail.com>
 // @date Jul 06 2022
 //
-use std::{
-    os::raw::c_int,
-};
+use std::os::raw::c_int;
 
 // constants stolen from C headers
 pub const AF_CAN: c_int = 29;
@@ -21,7 +19,6 @@ pub const CAN_RAW_RECV_OWN_MSGS: c_int = 4;
 // unused:
 // const CAN_RAW_FD_FRAMES: c_int = 5;
 pub const CAN_RAW_JOIN_FILTERS: c_int = 6;
-
 
 // get timestamp in a struct timeval (us accuracy)
 // const SIOCGSTAMP: c_int = 0x8906;
@@ -46,7 +43,6 @@ pub const EFF_MASK: u32 = 0x1fffffff;
 
 /// valid bits in error frame
 pub const ERR_MASK: u32 = 0x1fffffff;
-
 
 /// an error mask that will cause SocketCAN to report all errors
 pub const ERR_MASK_ALL: u32 = ERR_MASK;

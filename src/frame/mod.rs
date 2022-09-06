@@ -1,12 +1,12 @@
-use crate::err::{ConstructionError, CanError, CanErrorDecodingFailure};
-use embedded_hal::can::{Frame, Id, StandardId, ExtendedId};
+mod id;
+
 use crate::constants::*;
+use crate::err::{CanError, CanErrorDecodingFailure, ConstructionError};
 use crate::util::hal_id_to_raw;
-
-use std::fmt;
-
+use embedded_hal::can::{ExtendedId, Frame, Id, StandardId};
+pub use id::IntoCanId;
 use itertools::Itertools;
-
+use std::fmt;
 
 /// CanFrame
 ///
@@ -35,22 +35,23 @@ pub struct CanFrame {
 }
 
 impl CanFrame {
-    pub fn init(id: u32, data: &[u8], rtr: bool, err: bool) -> Result<CanFrame, ConstructionError> {
-        let mut _id = id;
-
+    pub fn init(
+        id: impl IntoCanId,
+        data: &[u8],
+        rtr: bool,
+        err: bool,
+    ) -> Result<CanFrame, ConstructionError> {
         if data.len() > 8 {
             return Err(ConstructionError::TooMuchData);
         }
 
-        if id > EFF_MASK {
-            return Err(ConstructionError::IDTooLarge);
-        }
-
-        // set EFF_FLAG on large message
-        if id > SFF_MASK {
-            _id |= EFF_FLAG;
-        }
-
+        let mut _id = match id.to_can_id()? {
+            Id::Standard(id) => id.as_raw() as u32,
+            Id::Extended(id) => {
+                // set EFF_FLAG
+                id.as_raw() | EFF_FLAG
+            }
+        };
 
         if rtr {
             _id |= RTR_FLAG;
@@ -68,13 +69,13 @@ impl CanFrame {
         }
 
         Ok(CanFrame {
-               _id,
-               _data_len: data.len() as u8,
-               _pad: 0,
-               _res0: 0,
-               _res1: 0,
-               _data: full_data,
-           })
+            _id,
+            _data_len: data.len() as u8,
+            _pad: 0,
+            _res0: 0,
+            _res1: 0,
+            _data: full_data,
+        })
     }
 
     /// Return the error message
@@ -99,7 +100,6 @@ impl CanFrame {
     pub fn error(&self) -> Result<CanError, CanErrorDecodingFailure> {
         CanError::from_frame(self)
     }
-
 }
 
 impl Frame for CanFrame {
@@ -119,13 +119,9 @@ impl Frame for CanFrame {
     /// Return the actual CAN ID (without EFF/RTR/ERR flags)
     fn id(&self) -> Id {
         if self.is_extended() {
-            Id::Extended(
-                ExtendedId::new(self._id & EFF_MASK).unwrap()
-            )
+            Id::Extended(ExtendedId::new(self._id & EFF_MASK).unwrap())
         } else {
-            Id::Standard(
-                StandardId::new((self._id & SFF_MASK) as u16).unwrap()
-            )
+            Id::Standard(StandardId::new((self._id & SFF_MASK) as u16).unwrap())
         }
     }
 
@@ -138,7 +134,7 @@ impl Frame for CanFrame {
     fn is_remote_frame(&self) -> bool {
         self._id & RTR_FLAG != 0
     }
-    
+
     /// Data length
     fn dlc(&self) -> usize {
         self._data_len as usize
@@ -160,4 +156,3 @@ impl fmt::UpperHex for CanFrame {
         write!(f, "{}", parts.join(sep))
     }
 }
-

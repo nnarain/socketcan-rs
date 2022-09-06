@@ -1,4 +1,4 @@
-use socketcan_hal::{CanSocket, CanFrame, ShouldRetry, constants::*};
+use socketcan_hal::{constants::*, CanFrame, CanSocket, ShouldRetry};
 use std::time;
 
 #[test]
