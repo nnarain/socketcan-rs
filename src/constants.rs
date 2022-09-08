@@ -21,10 +21,10 @@ pub const CAN_RAW_RECV_OWN_MSGS: c_int = 4;
 pub const CAN_RAW_JOIN_FILTERS: c_int = 6;
 
 // get timestamp in a struct timeval (us accuracy)
-// const SIOCGSTAMP: c_int = 0x8906;
+// const SIOCGSTAMP: u16 = 0x8906;
 
 // get timestamp in a struct timespec (ns accuracy)
-pub const SIOCGSTAMPNS: c_int = 0x8907;
+pub const SIOCGSTAMPNS: u16 = 0x8907;
 
 /// if set, indicate 29 bit extended format
 pub const EFF_FLAG: u32 = 0x80000000;

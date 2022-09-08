@@ -4,15 +4,16 @@ use crate::frame::CanFrame;
 use crate::util::{set_socket_option, set_socket_option_mult, system_time_from_timespec};
 
 use libc::{
-    bind, close, fcntl, read, sockaddr, socket, suseconds_t, time_t, timespec, timeval, write,
-    EINPROGRESS, F_GETFL, F_SETFL, O_NONBLOCK, SOCK_RAW, SOL_SOCKET, SO_RCVTIMEO, SO_SNDTIMEO,
+    bind, close, fcntl, read, sockaddr, socket, suseconds_t, timespec, timeval, write, EINPROGRESS,
+    F_GETFL, F_SETFL, O_NONBLOCK, SOCK_RAW, SOL_SOCKET, SO_RCVTIMEO, SO_SNDTIMEO,
 };
 use nix::net::if_::if_nametoindex;
+use std::convert::TryInto;
 use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 use std::{
     fmt, io,
     mem::size_of,
-    os::raw::{c_int, c_short, c_uint, c_ulong, c_void},
+    os::raw::{c_int, c_short, c_uint, c_void},
     time,
 };
 
@@ -61,7 +62,7 @@ impl<E: fmt::Debug> ShouldRetry for io::Result<E> {
 
 fn c_timeval_new(t: time::Duration) -> timeval {
     timeval {
-        tv_sec: t.as_secs() as time_t,
+        tv_sec: t.as_secs().try_into().unwrap(),
         tv_usec: t.subsec_micros() as suseconds_t,
     }
 }
@@ -212,8 +213,7 @@ impl CanSocket {
             tv_sec: 0,
             tv_nsec: 0,
         };
-        let rval =
-            unsafe { libc::ioctl(self.fd, SIOCGSTAMPNS as c_ulong, &mut ts as *mut timespec) };
+        let rval = unsafe { libc::ioctl(self.fd, SIOCGSTAMPNS.into(), &mut ts as *mut timespec) };
 
         if rval == -1 {
             return Err(io::Error::last_os_error());
