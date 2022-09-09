@@ -180,8 +180,8 @@ impl<'a, R: io::Read> Iterator for CanDumpRecords<'a, io::BufReader<R>> {
 #[cfg(test)]
 mod test {
     use super::Reader;
+    use crate::embedded_hal::can::Frame;
     use crate::util::hal_id_to_raw;
-    use embedded_hal::can::Frame;
 
     #[test]
     fn test_simple_example() {

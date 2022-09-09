@@ -82,8 +82,15 @@ mod nl;
 #[cfg(feature = "netlink")]
 pub use nl::CanInterface;
 
+#[cfg(feature = "hal-one")]
+use embedded_hal_one as embedded_hal;
+
+#[cfg(not(feature = "hal-one"))]
+use embedded_hal;
+
 use std::io::ErrorKind;
 
+#[cfg(feature = "hal-one")]
 impl embedded_hal::can::blocking::Can for CanSocket {
     type Frame = CanFrame;
     type Error = CanError;

@@ -1,9 +1,9 @@
 mod id;
 
 use crate::constants::*;
+use crate::embedded_hal::can::{ExtendedId, Frame, Id, StandardId};
 use crate::err::{CanError, CanErrorDecodingFailure, ConstructionError};
 use crate::util::hal_id_to_raw;
-use embedded_hal::can::{ExtendedId, Frame, Id, StandardId};
 pub use id::IntoCanId;
 use itertools::Itertools;
 use std::fmt;

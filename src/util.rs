@@ -1,4 +1,4 @@
-use embedded_hal::can::Id;
+use crate::embedded_hal::can::Id;
 use libc::{c_int, c_void, setsockopt, socklen_t, timespec};
 use std::mem::size_of;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
