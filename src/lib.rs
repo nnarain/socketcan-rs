@@ -65,12 +65,12 @@ mod err;
 pub use err::{CanError, CanErrorDecodingFailure, CanSocketOpenError, ConstructionError};
 
 mod frame;
-pub use frame::CanFrame;
+pub use frame::{CanFrame, IntoCanId};
 
 pub mod constants;
 
 mod socket;
-pub use socket::{CanSocket, CanFilter, ShouldRetry};
+pub use socket::{CanFilter, CanSocket, ShouldRetry};
 
 pub mod dump;
 
@@ -82,9 +82,15 @@ mod nl;
 #[cfg(feature = "netlink")]
 pub use nl::CanInterface;
 
+#[cfg(feature = "hal-one")]
+use embedded_hal_one as embedded_hal;
+
+#[cfg(not(feature = "hal-one"))]
+use embedded_hal;
+
 use std::io::ErrorKind;
 
-
+#[cfg(feature = "hal-one")]
 impl embedded_hal::can::blocking::Can for CanSocket {
     type Frame = CanFrame;
     type Error = CanError;
@@ -97,11 +103,11 @@ impl embedded_hal::can::blocking::Can for CanSocket {
                 } else {
                     Err(frame.error().unwrap_or(CanError::Unknown(0)))
                 }
-            },
+            }
             Err(e) => {
                 let code = e.raw_os_error().unwrap_or(0);
                 Err(CanError::Unknown(code as u32))
-            },
+            }
         }
     }
 
@@ -111,7 +117,7 @@ impl embedded_hal::can::blocking::Can for CanSocket {
             Err(e) => {
                 let code = e.raw_os_error().unwrap_or(0);
                 Err(CanError::Unknown(code as u32))
-            },
+            }
         }
     }
 }
@@ -129,7 +135,7 @@ impl embedded_hal::can::nb::Can for CanSocket {
                     let can_error = frame.error().unwrap_or(CanError::Unknown(0));
                     Err(nb::Error::Other(can_error))
                 }
-            },
+            }
             Err(e) => {
                 let e = match e.kind() {
                     ErrorKind::WouldBlock => nb::Error::WouldBlock,
@@ -144,7 +150,7 @@ impl embedded_hal::can::nb::Can for CanSocket {
     }
 
     fn transmit(&mut self, frame: &Self::Frame) -> nb::Result<Option<Self::Frame>, Self::Error> {
-        match self.write_frame(&frame) {
+        match self.write_frame(frame) {
             Ok(_) => Ok(None),
             Err(e) => {
                 match e.kind() {

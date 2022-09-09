@@ -2,24 +2,18 @@
 //                  /include/uapi/linux/can/error.h
 
 use super::CanFrame;
-use embedded_hal::can::Frame;
-use std::{
-    convert::TryFrom,
-    error,
-    fmt,
-    io,
-};
-
+use crate::embedded_hal::can::Frame;
+use std::{convert::TryFrom, error, fmt, io};
 
 #[inline]
 /// Helper function to retrieve a specific byte of frame data or returning an
 /// `Err(..)` otherwise.
 fn get_data(frame: &CanFrame, idx: u8) -> Result<u8, CanErrorDecodingFailure> {
-    Ok(*(frame.data()
+    Ok(*(frame
+        .data()
         .get(idx as usize)
         .ok_or(CanErrorDecodingFailure::NotEnoughData(idx)))?)
 }
-
 
 /// Error decoding a CanError from a CanFrame.
 #[derive(Copy, Clone, Debug)]
@@ -65,7 +59,6 @@ impl fmt::Display for CanErrorDecodingFailure {
         write!(f, "{}", msg)
     }
 }
-
 
 #[derive(Copy, Clone, Debug)]
 pub enum CanError {
@@ -126,17 +119,18 @@ impl fmt::Display for CanError {
     }
 }
 
-impl embedded_hal::can::Error for CanError {
-    fn kind(&self) -> embedded_hal::can::ErrorKind {
+impl crate::embedded_hal::can::Error for CanError {
+    fn kind(&self) -> crate::embedded_hal::can::ErrorKind {
         match *self {
-            CanError::ControllerProblem(cp) => {
-                match cp {
-                    ControllerProblem::ReceiveBufferOverflow | ControllerProblem::TransmitBufferOverflow => embedded_hal::can::ErrorKind::Overrun,
-                    ControllerProblem::Unspecified | _ => embedded_hal::can::ErrorKind::Other,
+            CanError::ControllerProblem(cp) => match cp {
+                ControllerProblem::ReceiveBufferOverflow
+                | ControllerProblem::TransmitBufferOverflow => {
+                    crate::embedded_hal::can::ErrorKind::Overrun
                 }
+                _ => crate::embedded_hal::can::ErrorKind::Other,
             },
-            CanError::NoAck => embedded_hal::can::ErrorKind::Acknowledge,
-            _ => embedded_hal::can::ErrorKind::Other,
+            CanError::NoAck => crate::embedded_hal::can::ErrorKind::Acknowledge,
+            _ => crate::embedded_hal::can::ErrorKind::Other,
         }
     }
 }
@@ -437,16 +431,14 @@ impl CanError {
         match frame.err() {
             0x00000001 => Ok(CanError::TransmitTimeout),
             0x00000002 => Ok(CanError::LostArbitration(get_data(frame, 0)?)),
-            0x00000004 => {
-                Ok(CanError::ControllerProblem(ControllerProblem::try_from(get_data(frame, 1)?)?))
-            }
+            0x00000004 => Ok(CanError::ControllerProblem(ControllerProblem::try_from(
+                get_data(frame, 1)?,
+            )?)),
 
-            0x00000008 => {
-                Ok(CanError::ProtocolViolation {
-                    vtype: ViolationType::try_from(get_data(frame, 2)?)?,
-                    location: Location::try_from(get_data(frame, 3)?)?,
-                })
-            }
+            0x00000008 => Ok(CanError::ProtocolViolation {
+                vtype: ViolationType::try_from(get_data(frame, 2)?)?,
+                location: Location::try_from(get_data(frame, 3)?)?,
+            }),
 
             0x00000010 => Ok(CanError::TransceiverError),
             0x00000020 => Ok(CanError::NoAck),
@@ -529,5 +521,3 @@ impl From<io::Error> for CanSocketOpenError {
         CanSocketOpenError::IOError(e)
     }
 }
-
-
