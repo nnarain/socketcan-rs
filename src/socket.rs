@@ -1,22 +1,21 @@
-
-use crate::frame::CanFrame;
-use crate::err::{CanSocketOpenError, ConstructionError};
-use crate::util::{set_socket_option, set_socket_option_mult, system_time_from_timespec};
 use crate::constants::*;
+use crate::err::{CanSocketOpenError, ConstructionError};
+use crate::frame::CanFrame;
+use crate::util::{set_socket_option, set_socket_option_mult, system_time_from_timespec};
 
-
-use libc::{socket, SOCK_RAW, close, bind, sockaddr, read,
-    write, SOL_SOCKET, SO_RCVTIMEO, timespec, timeval, EINPROGRESS, SO_SNDTIMEO, time_t,
-    suseconds_t, fcntl, F_GETFL, F_SETFL, O_NONBLOCK};
-use nix::net::if_::if_nametoindex;
-use std::{
-    os::raw::{c_int, c_short, c_void, c_uint, c_ulong},
-    fmt,
-    io,
-    time,
-    mem::size_of,
+use libc::{
+    bind, close, fcntl, read, sockaddr, socket, suseconds_t, timespec, timeval, write, EINPROGRESS,
+    F_GETFL, F_SETFL, O_NONBLOCK, SOCK_RAW, SOL_SOCKET, SO_RCVTIMEO, SO_SNDTIMEO,
 };
+use nix::net::if_::if_nametoindex;
+use std::convert::TryInto;
 use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
+use std::{
+    fmt, io,
+    mem::size_of,
+    os::raw::{c_int, c_short, c_uint, c_void},
+    time,
+};
 
 /// Check an error return value for timeouts.
 ///
@@ -61,10 +60,9 @@ impl<E: fmt::Debug> ShouldRetry for io::Result<E> {
     }
 }
 
-
 fn c_timeval_new(t: time::Duration) -> timeval {
     timeval {
-        tv_sec: t.as_secs() as time_t,
+        tv_sec: t.as_secs().try_into().unwrap(),
         tv_usec: t.subsec_micros() as suseconds_t,
     }
 }
@@ -122,9 +120,11 @@ impl CanSocket {
         let bind_rv;
         unsafe {
             let sockaddr_ptr = &addr as *const CanAddr;
-            bind_rv = bind(sock_fd,
-                           sockaddr_ptr as *const sockaddr,
-                           size_of::<CanAddr>() as u32);
+            bind_rv = bind(
+                sock_fd,
+                sockaddr_ptr as *const sockaddr,
+                size_of::<CanAddr>() as u32,
+            );
         }
 
         // FIXME: on fail, close socket (do not leak socketfds)
@@ -209,10 +209,11 @@ impl CanSocket {
     pub fn read_frame_with_timestamp(&mut self) -> io::Result<(CanFrame, time::SystemTime)> {
         let frame = self.read_frame()?;
 
-        let mut ts = timespec { tv_sec: 0, tv_nsec: 0 };
-        let rval = unsafe {
-            libc::ioctl(self.fd, SIOCGSTAMPNS as c_ulong, &mut ts as *mut timespec)
+        let mut ts = timespec {
+            tv_sec: 0,
+            tv_nsec: 0,
         };
+        let rval = unsafe { libc::ioctl(self.fd, SIOCGSTAMPNS.into(), &mut ts as *mut timespec) };
 
         if rval == -1 {
             return Err(io::Error::last_os_error());
@@ -319,7 +320,7 @@ impl AsRawFd for CanSocket {
 
 impl FromRawFd for CanSocket {
     unsafe fn from_raw_fd(fd: RawFd) -> CanSocket {
-        CanSocket { fd, }
+        CanSocket { fd }
     }
 }
 
@@ -334,7 +335,6 @@ impl Drop for CanSocket {
         self.close().ok(); // ignore result
     }
 }
-
 
 /// CanFilter
 ///
@@ -351,8 +351,8 @@ impl CanFilter {
     /// Construct a new CAN filter.
     pub fn new(id: u32, mask: u32) -> Result<CanFilter, ConstructionError> {
         Ok(CanFilter {
-               _id: id,
-               _mask: mask,
-           })
+            _id: id,
+            _mask: mask,
+        })
     }
 }
